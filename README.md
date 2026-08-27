@@ -67,13 +67,6 @@ python app.py
 | DELETE | `/api/transactions/<id>`      | ลบรายการ                           |
 | GET    | `/api/summary`                | สรุปยอดรวม + ข้อมูลสำหรับกราฟ         |
 
-## แนวทางต่อยอด (ถ้าอยากทำเพิ่ม)
-
-- **Authentication**: เพิ่มระบบ login (Flask-Login) เพื่อแยกข้อมูลแต่ละผู้ใช้
-- **ตั้งงบประมาณ**: เพิ่มตาราง `budgets` และแจ้งเตือนเมื่อรายจ่ายใกล้เกินงบ
-- **Export CSV**: เพิ่ม endpoint `/api/export` ให้ดาวน์โหลดข้อมูลเป็นไฟล์ CSV
-- **Deploy จริง**: ใช้ Gunicorn + Nginx หรือ deploy ขึ้น Render / Railway / PythonAnywhere
-  (ใช้ MySQL แบบ managed เช่น PlanetScale หรือ Railway MySQL)
 
 ## หมายเหตุด้านความปลอดภัย
 
