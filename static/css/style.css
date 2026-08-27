@@ -27,16 +27,21 @@ a { text-decoration: none; }
 /* ========== HEADER ========== */
 
 header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
     background: linear-gradient(135deg, var(--dark-navy), var(--blue));
     color: white;
     padding: 35px 20px;
     margin: 10px;
     border-radius: 15px;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.header-inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 1000px;
+    margin: 0 auto;
 }
 
 header h1 {
@@ -46,21 +51,75 @@ header h1 {
     margin: 0;
 }
 
+/* ========== DARK MODE TOGGLE ========== */
+
 #darkMode {
-    border: none;
-    background-color: rgba(255, 255, 255, 0.15);
-    color: white;
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(6px);
+
+    width: 46px;
+    height: 46px;
     border-radius: 50%;
-    width: 42px;
-    height: 42px;
+
     cursor: pointer;
-    transition: 0.3s;
-    font-size: 18px;
+    overflow: hidden;
+
+    transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
 }
 
 #darkMode:hover {
-    transform: scale(1.1);
-    background-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.22);
+    border-color: rgba(255, 255, 255, 0.45);
+    transform: translateY(-50%) scale(1.08);
+}
+
+#darkMode:active {
+    transform: translateY(-50%) scale(0.94);
+}
+
+#darkMode i {
+    position: absolute;
+    font-size: 18px;
+    transition: transform 0.4s ease, opacity 0.3s ease;
+}
+
+/* โหมดสว่าง: แสดงไอคอนพระจันทร์ ซ่อนพระอาทิตย์ */
+#darkMode .fa-moon {
+    color: #cbd5e1;
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+}
+
+#darkMode .fa-sun {
+    color: #fbbf24;
+    opacity: 0;
+    transform: rotate(90deg) scale(0.5);
+}
+
+/* โหมดมืด: สลับไอคอน */
+body.dark #darkMode {
+    background: rgba(251, 191, 36, 0.15);
+    border-color: rgba(251, 191, 36, 0.4);
+}
+
+body.dark #darkMode .fa-moon {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+}
+
+body.dark #darkMode .fa-sun {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
 }
 
 main {

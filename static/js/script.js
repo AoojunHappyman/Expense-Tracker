@@ -241,13 +241,11 @@ const darkModeBtn = document.getElementById("darkMode");
 darkModeBtn.addEventListener("click", () => {
     document.body.classList.toggle("dark");
     const isDark = document.body.classList.contains("dark");
-    darkModeBtn.textContent = isDark ? "☀️" : "🌙";
     localStorage.setItem("darkMode", isDark ? "on" : "off");
 });
 
 if (localStorage.getItem("darkMode") === "on") {
     document.body.classList.add("dark");
-    darkModeBtn.textContent = "☀️";
 }
 
 /* ==========================================
