@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+    <header>
+        <h1><i class="fa-solid fa-wallet"></i> Expense Tracker</h1>
+        <button id="darkMode" title="สลับโหมดมืด/สว่าง">🌙</button>
+    </header>
+
+    <main>
+
+        <!-- ========== การ์ดสรุปยอด ========== -->
+        <section class="summary-cards">
+            <div class="card income">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+                <div>
+                    <p class="label">รายรับรวม</p>
+                    <p class="value" id="totalIncome">฿0.00</p>
+                </div>
+            </div>
+            <div class="card expense">
+                <i class="fa-solid fa-arrow-trend-down"></i>
+                <div>
+                    <p class="label">รายจ่ายรวม</p>
+                    <p class="value" id="totalExpense">฿0.00</p>
+                </div>
+            </div>
+            <div class="card balance">
+                <i class="fa-solid fa-scale-balanced"></i>
+                <div>
+                    <p class="label">คงเหลือ</p>
+                    <p class="value" id="totalBalance">฿0.00</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== ฟอร์มเพิ่มรายการ ========== -->
+        <section class="box form-box">
+            <h3 class="Eb"><i class="fa-solid fa-plus"></i> เพิ่มรายการ</h3>
+            <form id="transactionForm">
+                <div class="form-row">
+                    <label for="type">ประเภท</label>
+                    <select id="type" required>
+                        <option value="expense">รายจ่าย</option>
+                        <option value="income">รายรับ</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="amount">จำนวนเงิน (บาท)</label>
+                    <input type="number" id="amount" min="0.01" step="0.01" required placeholder="0.00">
+                </div>
+                <div class="form-row">
+                    <label for="category">หมวดหมู่</label>
+                    <input type="text" id="category" list="categoryList" required placeholder="เช่น อาหาร, เดินทาง">
+                    <datalist id="categoryList">
+                        <option value="อาหาร">
+                        <option value="เดินทาง">
+                        <option value="ช้อปปิ้ง">
+                        <option value="บันเทิง">
+                        <option value="เงินเดือน/ค่าขนม">
+                        <option value="รายได้พิเศษ">
+                        <option value="อื่นๆ">
+                    </datalist>
+                </div>
+                <div class="form-row">
+                    <label for="date">วันที่</label>
+                    <input type="date" id="date" required>
+                </div>
+                <div class="form-row">
+                    <label for="note">หมายเหตุ</label>
+                    <input type="text" id="note" placeholder="(ไม่บังคับ)">
+                </div>
+                <button type="submit" id="submitBtn"><i class="fa-solid fa-check"></i> บันทึกรายการ</button>
+            </form>
+        </section>
+
+        <!-- ========== กราฟ ========== -->
+        <section class="charts-grid">
+            <div class="box chart-box">
+                <h3 class="Eb"><i class="fa-solid fa-chart-pie"></i> รายจ่ายแยกตามหมวดหมู่</h3>
+                <div class="boxtext1"><canvas id="categoryChart"></canvas></div>
+            </div>
+            <div class="box chart-box">
+                <h3 class="Eb"><i class="fa-solid fa-chart-column"></i> รายรับ-รายจ่ายรายเดือน</h3>
+                <div class="boxtext1"><canvas id="monthlyChart"></canvas></div>
+            </div>
+        </section>
+
+        <!-- ========== ตารางรายการ ========== -->
+        <section class="box table-box">
+            <h3 class="Eb"><i class="fa-solid fa-list"></i> รายการทั้งหมด</h3>
+            <div class="boxtext1 table-wrap">
+                <table id="transactionTable">
+                    <thead>
+                        <tr>
+                            <th>วันที่</th>
+                            <th>ประเภท</th>
+                            <th>หมวดหมู่</th>
+                            <th>หมายเหตุ</th>
+                            <th>จำนวนเงิน</th>
+                            <th>จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionBody">
+                        <!-- เติมด้วย JavaScript -->
+                    </tbody>
+                </table>
+                <p id="emptyState" class="empty-state" style="display:none;">ยังไม่มีรายการ ลองเพิ่มรายการแรกของคุณ</p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>&copy; Expense Tracker Project</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
