@@ -237,6 +237,79 @@ def get_summary():
         }
     )
 
+@app.route("/api/insights")
+def get_insights():
+    """
+    วิเคราะห์ข้อมูลรายจ่าย:
+    - top_categories: หมวดหมู่ใช้จ่ายสูงสุด 3 อันดับ
+    - busiest_day: วันในสัปดาห์ที่ใช้จ่ายรวมเยอะที่สุด
+    - day_breakdown: ยอดรวมแยกตามวันในสัปดาห์ (ทั้ง 7 วัน)
+    - month_comparison: เทียบยอดรายจ่ายเดือนนี้กับเดือนก่อน
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
 
+    # หมวดหมู่ใช้จ่ายสูงสุด 3 อันดับ
+    cursor.execute(
+        """SELECT category, SUM(amount) AS total, COUNT(*) AS count
+           FROM transactions
+           WHERE type = 'expense'
+           GROUP BY category
+           ORDER BY total DESC
+           LIMIT 3"""
+    )
+    top_categories = [
+        {"category": r["category"], "total": float(r["total"]), "count": r["count"]}
+        for r in cursor.fetchall()
+    ]
+
+    # ดึงรายจ่ายทั้งหมดมาคำนวณวันในสัปดาห์ (ทำใน Python เพื่อได้ชื่อวันภาษาไทย)
+    cursor.execute("SELECT date, amount FROM transactions WHERE type = 'expense'")
+    expense_rows = cursor.fetchall()
+
+    thai_days = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"]
+    day_totals = [0.0] * 7
+    for r in expense_rows:
+        day_totals[r["date"].weekday()] += float(r["amount"])
+
+    day_breakdown = [{"day": thai_days[i], "total": day_totals[i]} for i in range(7)]
+
+    busiest_day = None
+    if any(day_totals):
+        idx = max(range(7), key=lambda i: day_totals[i])
+        busiest_day = {"day": thai_days[idx], "total": day_totals[idx]}
+
+    # เทียบเดือนนี้กับเดือนก่อน
+    cursor.execute(
+        """SELECT DATE_FORMAT(date, '%Y-%m') AS month, SUM(amount) AS total
+           FROM transactions
+           WHERE type = 'expense'
+           GROUP BY month
+           ORDER BY month DESC
+           LIMIT 2"""
+    )
+    months = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    month_comparison = None
+    if len(months) == 2:
+        current, previous = float(months[0]["total"]), float(months[1]["total"])
+        pct_change = ((current - previous) / previous * 100) if previous else 0
+        month_comparison = {
+            "current_month": months[0]["month"],
+            "current_total": current,
+            "previous_total": previous,
+            "pct_change": round(pct_change, 1),
+        }
+
+    return jsonify(
+        {
+            "top_categories": top_categories,
+            "busiest_day": busiest_day,
+            "day_breakdown": day_breakdown,
+            "month_comparison": month_comparison,
+        }
+    )
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

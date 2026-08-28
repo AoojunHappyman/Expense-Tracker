@@ -22,7 +22,7 @@ const fmtMoney = (n) =>
 ========================================== */
 
 async function loadAll() {
-    await Promise.all([loadTransactions(), loadSummary()]);
+    await Promise.all([loadTransactions(), loadSummary(),loadInsights()]);
 }
 
 async function loadTransactions() {
@@ -295,4 +295,69 @@ function animateValue(elId, endValue) {
     }
     el.dataset.raw = endValue;
     requestAnimationFrame(step);
+}
+
+async function loadInsights() {
+    const res = await fetch("/api/insights");
+    const data = await res.json();
+    renderInsights(data);
+}
+
+function renderInsights(data) {
+    const container = document.getElementById("insightContent");
+    const items = [];
+
+    // หมวดหมู่ใช้จ่ายสูงสุด 3 อันดับ
+    if (data.top_categories.length) {
+        const rankHtml = data.top_categories
+            .map((c, i) => `<li><span><span class="rank-num">${i + 1}.</span>${escapeHtml(c.category)}</span><b>${fmtMoney(c.total)}</b></li>`)
+            .join("");
+        items.push(`
+            <div class="insight-item">
+                <i class="fa-solid fa-ranking-star"></i>
+                <div>
+                    <p class="insight-title">หมวดหมู่ใช้จ่ายสูงสุด</p>
+                    <ul class="rank-list">${rankHtml}</ul>
+                </div>
+            </div>
+        `);
+    }
+
+    // วันในสัปดาห์ที่ใช้จ่ายเยอะสุด
+    if (data.busiest_day) {
+        items.push(`
+            <div class="insight-item">
+                <i class="fa-solid fa-calendar-day"></i>
+                <div>
+                    <p class="insight-title">วันที่ใช้จ่ายเยอะที่สุด</p>
+                    <p class="insight-detail">วัน<b>${data.busiest_day.day}</b> ใช้จ่ายรวม <b>${fmtMoney(data.busiest_day.total)}</b></p>
+                </div>
+            </div>
+        `);
+    }
+
+    // เทียบเดือนนี้กับเดือนก่อน
+    if (data.month_comparison) {
+        const mc = data.month_comparison;
+        const isUp = mc.pct_change > 0;
+        const trendClass = isUp ? "trend-up" : "trend-down";
+        const trendIcon = isUp ? "fa-arrow-trend-up" : "fa-arrow-trend-down";
+        items.push(`
+            <div class="insight-item">
+                <i class="fa-solid fa-chart-line"></i>
+                <div>
+                    <p class="insight-title">เทียบกับเดือนก่อน</p>
+                    <p class="insight-detail">
+                        ใช้จ่ายเดือนนี้ <b>${fmtMoney(mc.current_total)}</b>
+                        <span class="${trendClass}"><i class="fa-solid ${trendIcon}"></i> ${Math.abs(mc.pct_change)}%</span>
+                        เทียบกับเดือนก่อน
+                    </p>
+                </div>
+            </div>
+        `);
+    }
+
+    container.innerHTML = items.length
+        ? `<div class="insight-grid">${items.join("")}</div>`
+        : `<p class="empty-state">ยังมีข้อมูลไม่พอสำหรับวิเคราะห์</p>`;
 }

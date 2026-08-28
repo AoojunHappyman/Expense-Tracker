@@ -476,3 +476,72 @@ body.dark .skeleton {
     background: linear-gradient(90deg, #334155 25%, #1e293b 50%, #334155 75%);
     background-size: 200% 100%;
 }
+/* ========== INSIGHTS ========== */
+
+.insight-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+}
+
+.insight-item {
+    display: flex;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 10px;
+    background: #f8fafc;
+}
+
+.insight-item i {
+    font-size: 20px;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    color: white;
+}
+
+.insight-item .insight-title {
+    font-weight: bold;
+    font-size: 13px;
+    color: #4b285c;
+    margin: 0 0 4px;
+}
+
+.insight-item .insight-detail {
+    margin: 0;
+    font-size: 13px;
+    color: #475569;
+}
+
+.insight-item .insight-detail b { color: #0f172a; }
+
+.rank-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.rank-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 13px;
+}
+
+.rank-list .rank-num {
+    color: #2563eb;
+    font-weight: bold;
+    margin-right: 6px;
+}
+
+.trend-up { color: #dc2626; }
+.trend-down { color: #15803d; }
+
+body.dark .insight-item { background: #334155; }
+body.dark .insight-item .insight-detail { color: #cbd5e1; }
+body.dark .insight-item .insight-detail b { color: #e2e8f0; }
