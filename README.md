@@ -67,7 +67,10 @@ python app.py
 | DELETE | `/api/transactions/<id>`      | ลบรายการ                           |
 | GET    | `/api/summary`                | สรุปยอดรวม + ข้อมูลสำหรับกราฟ         |
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> de39359 (Update website)
 ## หมายเหตุด้านความปลอดภัย
 
 โค้ดนี้เป็นเวอร์ชันสำหรับโปรเจกต์/portfolio ยังไม่มีระบบ login และ input validation

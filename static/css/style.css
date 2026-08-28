@@ -381,3 +381,98 @@ body.dark footer {
 }
 
 body.dark .card .label { color: #94a3b8; }
+
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    background: white;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    font-size: 14px;
+    min-width: 240px;
+    animation: toastIn 0.3s ease forwards;
+}
+
+.toast.success { border-left: 4px solid #22c55e; }
+.toast.error { border-left: 4px solid #dc2626; }
+
+.toast i { font-size: 18px; }
+.toast.success i { color: #22c55e; }
+.toast.error i { color: #dc2626; }
+
+.toast.hide { animation: toastOut 0.3s ease forwards; }
+
+@keyframes toastIn {
+    from { opacity: 0; transform: translateX(40px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+@keyframes toastOut {
+    to { opacity: 0; transform: translateX(40px); }
+}
+
+body.dark .toast { background: #1e293b; color: #e2e8f0; }
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+.modal-overlay.show { display: flex; }
+
+.modal-box {
+    background: white;
+    border-radius: 14px;
+    padding: 28px 32px;
+    text-align: center;
+    max-width: 320px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    animation: modalPop 0.2s ease;
+}
+
+@keyframes modalPop {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.modal-box i { font-size: 32px; color: #f59e0b; margin-bottom: 10px; }
+.modal-box p { margin: 8px 0 20px; font-weight: bold; }
+
+.modal-actions { display: flex; gap: 10px; justify-content: center; }
+.btn-secondary { background: #e2e8f0; color: #334155; }
+.btn-secondary:hover { background: #cbd5e1; }
+.btn-danger { background: #dc2626; }
+.btn-danger:hover { background: #b91c1c; }
+
+body.dark .modal-box { background: #1e293b; color: #e2e8f0; }
+
+.skeleton {
+    background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+    background-size: 200% 100%;
+    animation: skeletonLoad 1.2s infinite;
+    border-radius: 6px;
+    color: transparent !important;
+}
+@keyframes skeletonLoad {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+body.dark .skeleton {
+    background: linear-gradient(90deg, #334155 25%, #1e293b 50%, #334155 75%);
+    background-size: 200% 100%;
+}

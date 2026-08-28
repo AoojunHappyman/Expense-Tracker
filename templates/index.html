@@ -129,5 +129,16 @@
     </footer>
 
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <div id="toastContainer" class="toast-container"></div>
+    <div id="confirmModal" class="modal-overlay">
+    <div class="modal-box">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <p>ยืนยันลบรายการนี้?</p>
+        <div class="modal-actions">
+            <button id="cancelDelete" class="btn-secondary">ยกเลิก</button>
+            <button id="confirmDelete" class="btn-danger">ลบรายการ</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>

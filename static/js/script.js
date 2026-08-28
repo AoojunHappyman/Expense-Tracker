@@ -26,6 +26,10 @@ async function loadAll() {
 }
 
 async function loadTransactions() {
+    tableBody.innerHTML = Array(3).fill(
+        `<tr><td colspan="6"><div class="skeleton" style="height:20px;">.</div></td></tr>`
+    ).join("");
+
     const res = await fetch("/api/transactions");
     const data = await res.json();
     renderTable(data);
@@ -187,7 +191,7 @@ form.addEventListener("submit", async (e) => {
 
     if (!res.ok) {
         const err = await res.json();
-        alert(err.error || "เกิดข้อผิดพลาด");
+        showToast(err.error || "เกิดข้อผิดพลาด");
         return;
     }
 
@@ -226,7 +230,7 @@ async function deleteTransaction(id) {
 
     const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
     if (!res.ok) {
-        alert("ลบไม่สำเร็จ");
+        showToast("ลบไม่สำเร็จ");
         return;
     }
     await loadAll();
@@ -253,3 +257,42 @@ if (localStorage.getItem("darkMode") === "on") {
 ========================================== */
 
 loadAll();
+
+function showToast(message, type = "success") {
+    const container = document.getElementById("toastContainer");
+    const toast = document.createElement("div");
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+        <i class="fa-solid ${type === "success" ? "fa-circle-check" : "fa-circle-exclamation"}"></i>
+        <span>${message}</span>
+    `;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add("hide");
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+function renderTotals(totals) {
+    animateValue("totalIncome", totals.income);
+    animateValue("totalExpense", totals.expense);
+    animateValue("totalBalance", totals.balance);
+}
+
+function animateValue(elId, endValue) {
+    const el = document.getElementById(elId);
+    const startValue = parseFloat(el.dataset.raw || 0);
+    const duration = 600;
+    const startTime = performance.now();
+
+    function step(now) {
+        const progress = Math.min((now - startTime) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out
+        const current = startValue + (endValue - startValue) * eased;
+        el.textContent = fmtMoney(current);
+        if (progress < 1) requestAnimationFrame(step);
+    }
+    el.dataset.raw = endValue;
+    requestAnimationFrame(step);
+}
