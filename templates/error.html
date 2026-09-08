@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ status }} · Expense Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark">
+    <main class="auth-shell">
+        <section class="box auth-box">
+            <p class="eyebrow">EXPENSE TRACKER / {{ status }}</p>
+            <h1>{{ message }}</h1>
+            {% if reference %}<p>รหัสอ้างอิง: {{ reference }}</p>{% endif %}
+            <a class="button primary" href="/">กลับหน้าหลัก</a>
+        </section>
+    </main>
+</body>
+</html>

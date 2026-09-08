@@ -90,8 +90,10 @@ class TransactionApiTests(unittest.TestCase):
     def test_database_failure_rolls_back_and_closes(self):
         self.cursor.execute.side_effect = RuntimeError('database unavailable')
         for method in ['POST', 'PUT']:
-            with self.assertRaises(RuntimeError):
-                self.send(method, self.valid)
+            with self.assertLogs(app.logger, level='ERROR'):
+                response = self.send(method, self.valid)
+            self.assertEqual(response.status_code, 500)
+            self.assertNotIn('database unavailable', response.text)
         self.assertEqual(self.connection.rollback.call_count, 2)
         self.assertEqual(self.cursor.close.call_count, 2)
         self.assertEqual(self.connection.close.call_count, 4)

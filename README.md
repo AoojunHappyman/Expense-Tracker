@@ -155,3 +155,14 @@ $env:RUN_MYSQL_TESTS="1"
 ระบบใช้ `request.remote_addr` และไม่เชื่อ `X-Forwarded-For` โดยตรง
 หากนำขึ้น reverse proxy ต้องตั้ง trusted proxy ให้ตรงโครงสร้างจริงก่อนเปิดใช้งาน
 มิฉะนั้นผู้ใช้หลัง proxy อาจถูกนับเป็น IP เดียวกัน
+
+## Production deployment
+
+เตรียม Waitress + Caddy, HTTPS, Secure session cookie และ error handling แล้ว
+ดูขั้นตอนและข้อกำหนดที่ [deploy/README.md](deploy/README.md)
+การเตรียมไฟล์นี้ยังไม่ได้สร้างเซิร์ฟเวอร์ ชี้ DNS หรือออกใบรับรอง HTTPS
+
+### Free hosting
+
+สำหรับ Render Free + TiDB Starter ดู [deploy/RENDER.md](deploy/RENDER.md)
+ใช้ Blueprint `render.yaml` และ `serve_render.py` แทนชุด Caddy สำหรับ VPS

@@ -16,12 +16,28 @@ load_dotenv()
 
 app = Flask(__name__)
 
+from production import configure_runtime
+configure_runtime(app)
+
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "localhost"),
+    "port": int(os.getenv("DB_PORT", "3306")),
+    "connection_timeout": 10,
     "user": os.getenv("DB_USER", "root"),
     "password": os.getenv("DB_PASSWORD", ""),
     "database": os.getenv("DB_NAME", "expense_tracker"),
 }
+
+
+if os.getenv("DB_SSL_CA"):
+    DB_CONFIG.update(
+        ssl_ca=os.environ["DB_SSL_CA"],
+        ssl_verify_cert=True,
+        ssl_verify_identity=True,
+        use_pure=True,
+    )
+if app.config['PRODUCTION'] and DB_CONFIG['host'] not in ('localhost', '127.0.0.1') and not os.getenv('DB_SSL_CA'):
+    raise RuntimeError('Remote production database requires DB_SSL_CA for verified TLS')
 
 
 def get_db_connection():

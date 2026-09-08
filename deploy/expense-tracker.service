@@ -1,0 +1,21 @@
+[Unit]
+Description=Expense Tracker WSGI
+After=network.target
+
+[Service]
+Type=simple
+User=expense
+Group=expense
+WorkingDirectory=/opt/expense-tracker
+EnvironmentFile=/etc/expense-tracker.env
+ExecStart=/opt/expense-tracker/venv/bin/python /opt/expense-tracker/serve.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

@@ -16,7 +16,7 @@ def init_auth(app, connect):
         SECRET_KEY=app.config.get('SECRET_KEY') or os.environ.get('SECRET_KEY') or secrets.token_hex(32),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE='Lax',
-        SESSION_COOKIE_SECURE=os.environ.get('COOKIE_SECURE') == '1',
+        SESSION_COOKIE_SECURE=app.config.get('PRODUCTION', False) or os.environ.get('COOKIE_SECURE') == '1',
         PERMANENT_SESSION_LIFETIME=timedelta(hours=12),
         MAX_CONTENT_LENGTH=16384,
     )
