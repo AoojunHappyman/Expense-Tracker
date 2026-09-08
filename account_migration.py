@@ -37,6 +37,20 @@ def register_commands(app, connect):
             cursor.close()
             conn.close()
 
+    @app.cli.command('purge-auth-limits')
+    def purge_auth_limits():
+        """Remove expired rate-limit counters outside the login request path."""
+        conn = connect()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('DELETE FROM auth_rate_limits WHERE expires_at < UTC_TIMESTAMP() LIMIT 10000')
+            count = cursor.rowcount
+            conn.commit()
+            click.echo(f'Removed {count} expired counters.')
+        finally:
+            cursor.close()
+            conn.close()
+
     @app.cli.command('assign-legacy')
     @click.argument('username')
     def assign_legacy(username):

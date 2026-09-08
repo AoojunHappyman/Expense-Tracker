@@ -26,36 +26,38 @@ def check_auth_limit(connect, endpoint):
     username = request.form.get('username', '').strip().lower()
     if account_limit and username:
         scopes.append(('account', username, account_limit))
+    buckets = {}
+    params = []
+    for scope, identity, (limit, seconds) in scopes:
+        key = hmac.new(
+            current_app.secret_key.encode(),
+            f'{endpoint}:{scope}:{identity}'.encode(),
+            hashlib.sha256,
+        ).hexdigest()
+        buckets[key] = limit
+        params.extend((key, seconds))
     conn = connect()
     cursor = conn.cursor()
     retry_after = 0
     try:
-        for scope, identity, (limit, seconds) in scopes:
-            key = hmac.new(
-                current_app.secret_key.encode(),
-                f'{endpoint}:{scope}:{identity}'.encode(),
-                hashlib.sha256,
-            ).hexdigest()
-            # The upsert locks the bucket, so concurrent workers cannot lose increments.
-            cursor.execute(
-                '''INSERT INTO auth_rate_limits (bucket_key, attempts, expires_at)
-                   VALUES (%s, 1, TIMESTAMPADD(SECOND, %s, UTC_TIMESTAMP()))
-                   ON DUPLICATE KEY UPDATE
-                       attempts = IF(expires_at <= UTC_TIMESTAMP(), 1, LEAST(attempts + 1, 1000000)),
-                       expires_at = IF(expires_at <= UTC_TIMESTAMP(),
-                           TIMESTAMPADD(SECOND, %s, UTC_TIMESTAMP()), expires_at)''',
-                (key, seconds, seconds),
-            )
-            cursor.execute(
-                '''SELECT attempts, GREATEST(1, TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), expires_at))
-                   FROM auth_rate_limits WHERE bucket_key = %s FOR UPDATE''', (key,)
-            )
-            attempts, remaining = cursor.fetchone()
-            if attempts > limit:
+        # Update both limits in one statement while retaining atomic row locks.
+        values = ', '.join(['(%s, 1, TIMESTAMPADD(SECOND, %s, UTC_TIMESTAMP()))'] * len(buckets))
+        cursor.execute(
+            'INSERT INTO auth_rate_limits (bucket_key, attempts, expires_at) VALUES ' + values +
+            """ ON DUPLICATE KEY UPDATE
+                attempts = IF(expires_at <= UTC_TIMESTAMP(), 1, LEAST(attempts + 1, 1000000)),
+                expires_at = IF(expires_at <= UTC_TIMESTAMP(), VALUES(expires_at), expires_at)""",
+            tuple(params),
+        )
+        placeholders = ', '.join(['%s'] * len(buckets))
+        cursor.execute(
+            'SELECT bucket_key, attempts, GREATEST(1, TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), expires_at)) '
+            'FROM auth_rate_limits WHERE bucket_key IN (' + placeholders + ') FOR UPDATE',
+            tuple(buckets),
+        )
+        for key, attempts, remaining in cursor.fetchall():
+            if attempts > buckets[key]:
                 retry_after = max(retry_after, remaining)
-        conn.commit()
-        # Bounded housekeeping after releasing bucket locks.
-        cursor.execute('DELETE FROM auth_rate_limits WHERE expires_at < UTC_TIMESTAMP() LIMIT 100')
         conn.commit()
     except Exception:
         conn.rollback()
