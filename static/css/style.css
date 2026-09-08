@@ -271,7 +271,8 @@ button:hover {
 
 button:active { transform: translateY(0); }
 
-#submitBtn { grid-column: 1 / -1; justify-self: start; }
+.form-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; }
+button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
 /* ========== CHARTS ========== */
 

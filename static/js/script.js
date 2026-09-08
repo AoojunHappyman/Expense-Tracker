@@ -7,6 +7,16 @@ const tableBody = document.getElementById("transactionBody");
 const emptyState = document.getElementById("emptyState");
 const dateInput = document.getElementById("date");
 
+const submitBtn = document.getElementById("submitBtn");
+const cancelEditBtn = document.getElementById("cancelEdit");
+const confirmModal = document.getElementById("confirmModal");
+const cancelDeleteBtn = document.getElementById("cancelDelete");
+const confirmDeleteBtn = document.getElementById("confirmDelete");
+let isSaving = false;
+let isDeleting = false;
+let pendingDeleteId = null;
+let deleteTrigger = null;
+
 let editingId = null;   // ถ้าไม่ null แปลว่ากำลังแก้ไขรายการนี้อยู่
 let categoryChart = null;
 let monthlyChart = null;
@@ -47,11 +57,7 @@ async function loadSummary() {
    Render: การ์ดสรุปยอด
 ========================================== */
 
-function renderTotals(totals) {
-    document.getElementById("totalIncome").textContent = fmtMoney(totals.income);
-    document.getElementById("totalExpense").textContent = fmtMoney(totals.expense);
-    document.getElementById("totalBalance").textContent = fmtMoney(totals.balance);
-}
+
 
 /* ==========================================
    Render: ตารางรายการ
@@ -171,6 +177,7 @@ function renderMonthlyChart(byMonth) {
 
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (isSaving || isDeleting || pendingDeleteId !== null) return;
 
     const payload = {
         type: document.getElementById("type").value,
@@ -183,23 +190,49 @@ form.addEventListener("submit", async (e) => {
     const url = editingId ? `/api/transactions/${editingId}` : "/api/transactions";
     const method = editingId ? "PUT" : "POST";
 
-    const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-        const err = await res.json();
-        showToast(err.error || "เกิดข้อผิดพลาด");
-        return;
+    isSaving = true;
+    setFormBusy(true);
+    submitBtn.textContent = "กำลังบันทึก...";
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            showToast(err.error || "บันทึกไม่สำเร็จ", "error");
+            return;
+        }
+        resetForm();
+        try {
+            await loadAll();
+        } catch {
+            showToast("บันทึกแล้ว แต่โหลดข้อมูลใหม่ไม่สำเร็จ กรุณารีเฟรชหน้า", "error");
+        }
+    } catch {
+        showToast("ไม่สามารถยืนยันผลการบันทึกได้ กรุณารีเฟรชตรวจรายการก่อนลองใหม่", "error");
+    } finally {
+        isSaving = false;
+        setFormBusy(false);
+        submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> ' +
+            (editingId !== null ? "บันทึกการแก้ไข" : "บันทึกรายการ");
     }
+});
 
+function setFormBusy(busy) {
+    Array.from(form.elements).forEach((element) => { element.disabled = busy; });
+}
+
+cancelEditBtn.addEventListener("click", () => {
+    if (isSaving || isDeleting) return;
     resetForm();
-    await loadAll();
+    document.getElementById("type").focus();
 });
 
 function startEdit(id, transactions) {
+    if (isSaving || isDeleting || pendingDeleteId !== null) return;
+    cancelEditBtn.hidden = false;
     const t = transactions.find((x) => String(x.id) === String(id));
     if (!t) return;
 
@@ -216,6 +249,7 @@ function startEdit(id, transactions) {
 
 function resetForm() {
     editingId = null;
+    cancelEditBtn.hidden = true;
     form.reset();
     dateInput.valueAsDate = new Date();
     document.getElementById("submitBtn").innerHTML = '<i class="fa-solid fa-check"></i> บันทึกรายการ';
@@ -225,16 +259,74 @@ function resetForm() {
    ลบรายการ
 ========================================== */
 
-async function deleteTransaction(id) {
-    if (!confirm("ยืนยันลบรายการนี้?")) return;
-
-    const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-        showToast("ลบไม่สำเร็จ");
-        return;
-    }
-    await loadAll();
+function deleteTransaction(id) {
+    if (isSaving || isDeleting || pendingDeleteId !== null) return;
+    pendingDeleteId = id;
+    deleteTrigger = document.activeElement;
+    confirmModal.classList.add("show");
+    cancelDeleteBtn.focus();
 }
+
+function closeDeleteModal() {
+    if (isDeleting) return;
+    confirmModal.classList.remove("show");
+    pendingDeleteId = null;
+    if (deleteTrigger?.isConnected) deleteTrigger.focus();
+    else submitBtn.focus();
+    deleteTrigger = null;
+}
+
+cancelDeleteBtn.addEventListener("click", closeDeleteModal);
+confirmModal.addEventListener("click", (event) => {
+    if (event.target === confirmModal) closeDeleteModal();
+});
+confirmModal.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+        event.preventDefault();
+        closeDeleteModal();
+    }
+    if (event.key === "Tab") {
+        event.preventDefault();
+        if (!isDeleting) {
+            (document.activeElement === cancelDeleteBtn ? confirmDeleteBtn : cancelDeleteBtn).focus();
+        }
+    }
+});
+
+confirmDeleteBtn.addEventListener("click", async () => {
+    if (pendingDeleteId === null || isDeleting || isSaving) return;
+    const id = pendingDeleteId;
+    let deleted = false;
+    isDeleting = true;
+    setFormBusy(true);
+    cancelDeleteBtn.disabled = true;
+    confirmDeleteBtn.disabled = true;
+    confirmDeleteBtn.textContent = "กำลังลบ...";
+    try {
+        const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
+        if (!res.ok) {
+            showToast("ลบไม่สำเร็จ", "error");
+            return;
+        }
+        deleted = true;
+        if (String(editingId) === String(id)) resetForm();
+        try {
+            await loadAll();
+        } catch {
+            showToast("ลบแล้ว แต่โหลดข้อมูลใหม่ไม่สำเร็จ กรุณารีเฟรชหน้า", "error");
+        }
+    } catch {
+        showToast("ไม่สามารถยืนยันผลการลบได้ กรุณารีเฟรชตรวจรายการ", "error");
+    } finally {
+        isDeleting = false;
+        setFormBusy(false);
+        cancelDeleteBtn.disabled = false;
+        confirmDeleteBtn.disabled = false;
+        confirmDeleteBtn.textContent = "ลบรายการ";
+        if (deleted) closeDeleteModal();
+        else cancelDeleteBtn.focus();
+    }
+});
 
 /* ==========================================
    Dark Mode (เหมือนกับเว็บเรซูเม่)
@@ -264,7 +356,7 @@ function showToast(message, type = "success") {
     toast.className = `toast ${type}`;
     toast.innerHTML = `
         <i class="fa-solid ${type === "success" ? "fa-circle-check" : "fa-circle-exclamation"}"></i>
-        <span>${message}</span>
+        <span>${escapeHtml(message)}</span>
     `;
     container.appendChild(toast);
 
