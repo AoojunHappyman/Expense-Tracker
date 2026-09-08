@@ -167,3 +167,9 @@ $env:RUN_MYSQL_TESTS="1"
 
 สำหรับ Render Free + TiDB Starter ดู [deploy/RENDER.md](deploy/RENDER.md)
 ใช้ Blueprint `render.yaml` และ `serve_render.py` แทนชุด Caddy สำหรับ VPS
+
+### Dashboard loading
+
+`GET /api/dashboard` รวม `transactions`, `summary`, `insights` สำหรับผู้ใช้ที่เข้าสู่ระบบ
+หน้าเว็บโหลดคำขอเดียวและอ่านรายการครั้งเดียวต่อการโหลด แทนการเรียก 3 API
+API เดิมยังใช้งานได้ ไม่มีการ cache ข้อมูลข้ามบัญชี

@@ -127,6 +127,21 @@ class AccountIntegrationTests(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         return response.get_json()['id'], payload
 
+    def test_dashboard_matches_existing_apis_and_is_private(self):
+        anonymous = app.test_client()
+        self.assertEqual(anonymous.get('/api/dashboard').status_code, 401)
+        a, _, _ = self.register()
+        b, _, _ = self.register()
+        self.transaction(a, 12.34)
+        self.transaction(b, 98.76)
+        for client in [a, b]:
+            response = client.get('/api/dashboard')
+            self.assertEqual(response.status_code, 200)
+            data = response.get_json()
+            for section in ['transactions', 'summary', 'insights']:
+                self.assertEqual(data[section], client.get('/api/' + section).get_json())
+            self.assertIn('no-store', response.headers['Cache-Control'])
+
     def test_auth_and_cross_account_isolation(self):
         anonymous = app.test_client()
         for method, path in [('GET','/api/transactions'),('POST','/api/transactions'),('PUT','/api/transactions/1'),('DELETE','/api/transactions/1'),('GET','/api/summary'),('GET','/api/insights')]:

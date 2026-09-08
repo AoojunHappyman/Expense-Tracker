@@ -230,6 +230,24 @@ def delete_transaction(transaction_id):
 # API: สรุปข้อมูลสำหรับกราฟ
 # ==========================================
 
+@app.get("/api/dashboard")
+def get_dashboard():
+    from dashboard import build_dashboard
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT id, type, amount, category, note, date FROM transactions "
+            "WHERE user_id = %s ORDER BY date DESC, id DESC",
+            (g.user['id'],),
+        )
+        rows = cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+    return jsonify(build_dashboard(rows))
+
+
 @app.route("/api/summary")
 def get_summary():
     """

@@ -32,25 +32,17 @@ const fmtMoney = (n) =>
 ========================================== */
 
 async function loadAll() {
-    await Promise.all([loadTransactions(), loadSummary(),loadInsights()]);
-}
-
-async function loadTransactions() {
     tableBody.innerHTML = Array(3).fill(
         `<tr><td colspan="6"><div class="skeleton" style="height:20px;">.</div></td></tr>`
     ).join("");
-
-    const res = await apiFetch("/api/transactions");
+    const res = await apiFetch("/api/dashboard");
+    if (!res.ok) throw new Error("Unable to load dashboard");
     const data = await res.json();
-    renderTable(data);
-}
-
-async function loadSummary() {
-    const res = await apiFetch("/api/summary");
-    const data = await res.json();
-    renderTotals(data.totals);
-    renderCategoryChart(data.by_category);
-    renderMonthlyChart(data.by_month);
+    renderTable(data.transactions);
+    renderTotals(data.summary.totals);
+    renderCategoryChart(data.summary.by_category);
+    renderMonthlyChart(data.summary.by_month);
+    renderInsights(data.insights);
 }
 
 /* ==========================================
