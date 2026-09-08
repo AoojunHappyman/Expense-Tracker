@@ -378,6 +378,30 @@ input, select {
     min-height: 46px;
 }
 
+/* Keep the native iOS date picker within the form column. */
+input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-inline-size: 0;
+    box-sizing: border-box;
+    text-align: left;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+    min-width: 0;
+    min-height: 1.5em;
+    text-align: left;
+}
+
+input[type="date"]::-webkit-datetime-edit {
+    display: inline-flex;
+    padding: 0;
+}
+
 input::placeholder {
     color: var(--muted);
 }
