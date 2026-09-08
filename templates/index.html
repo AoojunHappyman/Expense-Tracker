@@ -10,18 +10,20 @@
 </head>
 <body>
 
+    <a class="skip" href="#main">ข้ามไปเนื้อหา</a>
     <header>
-        <div class="header-inner">
-            <h1><i class="fa-solid fa-wallet"></i> Expense Tracker</h1>
-            <button id="darkMode" title="สลับโหมดมืด/สว่าง">
-                <i class="fa-solid fa-moon"></i>
-                <i class="fa-solid fa-sun"></i>
-            </button>
-        </div>
+        <nav class="header-inner" aria-label="เมนูหลัก">
+            <a class="brand" href="#main">e<span>.</span><span class="brand-name">Expense Tracker</span></a>
+            <div class="nav-links"><a href="#overview">ภาพรวม</a><a href="#entry">บันทึกรายการ</a><a href="#transactions">ประวัติรายการ</a></div>
+            <button id="darkMode" type="button" aria-label="สลับโหมดมืด/สว่าง" title="สลับโหมดมืด/สว่าง"><i class="fa-solid fa-moon"></i><i class="fa-solid fa-sun"></i></button>
+        </nav>
     </header>
-
-    <main>
-
+    <main id="main">
+        <section class="hero" id="overview">
+            <div><p class="eyebrow">PERSONAL FINANCE / EXPENSE TRACKER</p><h1>ทุกการใช้จ่าย<br><em>มองเห็นได้ชัดขึ้น.</em></h1><p class="hero-description">บันทึกรายรับ รายจ่าย และเข้าใจการใช้เงินของคุณในที่เดียว</p></div>
+            <a class="button primary" href="#entry">บันทึกรายการใหม่ <span aria-hidden="true">↗</span></a>
+        </section>
+        <div class="section-label"><span>01 / OVERVIEW</span><span>สรุปจากรายการทั้งหมด</span></div>
         <!-- ========== การ์ดสรุปยอด ========== -->
         <section class="summary-cards">
             <div class="card income">
@@ -48,8 +50,8 @@
         </section>
 
         <!-- ========== ฟอร์มเพิ่มรายการ ========== -->
-        <section class="box form-box">
-            <h3 class="Eb"><i class="fa-solid fa-plus"></i> เพิ่มรายการ</h3>
+        <section class="box form-box" id="entry">
+            <h2 class="Eb" id="formTitle"><i class="fa-solid fa-plus"></i> เพิ่มรายการ</h2>
             <form id="transactionForm">
                 <div class="form-row">
                     <label for="type">ประเภท</label>
@@ -64,7 +66,7 @@
                 </div>
                 <div class="form-row">
                     <label for="category">หมวดหมู่</label>
-                    <input type="text" id="category" list="categoryList" required placeholder="เช่น อาหาร, เดินทาง">
+                    <input maxlength="50" type="text" id="category" list="categoryList" required placeholder="เช่น อาหาร, เดินทาง">
                     <datalist id="categoryList">
                         <option value="อาหาร">
                         <option value="เดินทาง">
@@ -81,7 +83,7 @@
                 </div>
                 <div class="form-row">
                     <label for="note">หมายเหตุ</label>
-                    <input type="text" id="note" placeholder="(ไม่บังคับ)">
+                    <input maxlength="255" type="text" id="note" placeholder="(ไม่บังคับ)">
                 </div>
                 <div class="form-actions">
                     <button type="submit" id="submitBtn"><i class="fa-solid fa-check"></i> บันทึกรายการ</button>
@@ -91,7 +93,7 @@
         </section>
     <!-- ========== INSIGHTS ========== -->
 <section class="box insight-box">
-    <h3 class="Eb"><i class="fa-solid fa-lightbulb"></i> Insight การใช้จ่าย</h3>
+    <h2 class="Eb"><i class="fa-solid fa-lightbulb"></i> Insight การใช้จ่าย</h2>
     <div class="boxtext1" id="insightContent">
         <p class="empty-state">กำลังวิเคราะห์ข้อมูล...</p>
     </div>
@@ -99,18 +101,18 @@
         <!-- ========== กราฟ ========== -->
         <section class="charts-grid">
             <div class="box chart-box">
-                <h3 class="Eb"><i class="fa-solid fa-chart-pie"></i> รายจ่ายแยกตามหมวดหมู่</h3>
-                <div class="boxtext1"><canvas id="categoryChart"></canvas></div>
+                <h2 class="Eb"><i class="fa-solid fa-chart-pie"></i> รายจ่ายแยกตามหมวดหมู่</h2>
+                <div class="boxtext1"><canvas id="categoryChart" role="img" aria-label="กราฟรายจ่ายแยกตามหมวดหมู่"></canvas></div>
             </div>
             <div class="box chart-box">
-                <h3 class="Eb"><i class="fa-solid fa-chart-column"></i> รายรับ-รายจ่ายรายเดือน</h3>
-                <div class="boxtext1"><canvas id="monthlyChart"></canvas></div>
+                <h2 class="Eb"><i class="fa-solid fa-chart-column"></i> รายรับ-รายจ่ายรายเดือน</h2>
+                <div class="boxtext1"><canvas id="monthlyChart" role="img" aria-label="กราฟรายรับและรายจ่ายรายเดือน"></canvas></div>
             </div>
         </section>
 
         <!-- ========== ตารางรายการ ========== -->
-        <section class="box table-box">
-            <h3 class="Eb"><i class="fa-solid fa-list"></i> รายการทั้งหมด</h3>
+        <section class="box table-box" id="transactions">
+            <h2 class="Eb"><i class="fa-solid fa-list"></i> รายการทั้งหมด</h2>
             <div class="boxtext1 table-wrap">
                 <table id="transactionTable">
                     <thead>
@@ -134,10 +136,10 @@
     </main>
 
     <footer>
-        <p>&copy; Expense Tracker Project</p>
+        <a class="brand" href="#main">e<span>.</span></a><p>Expense Tracker · บันทึกวันนี้ เข้าใจการใช้เงินมากขึ้น</p><a href="#main">กลับด้านบน ↑</a>
     </footer>
 
-    <div id="toastContainer" class="toast-container"></div>
+    <div id="toastContainer" class="toast-container" role="status" aria-live="polite"></div>
     <div id="confirmModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
     <div class="modal-box">
         <i class="fa-solid fa-triangle-exclamation"></i>

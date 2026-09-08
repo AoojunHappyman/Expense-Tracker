@@ -114,7 +114,7 @@ function renderCategoryChart(byCategory) {
     const labels = byCategory.map((c) => c.category);
     const values = byCategory.map((c) => c.total);
 
-    const palette = ["#2563eb", "#7c3aed", "#f87171", "#facc15", "#22c55e", "#06b6d4", "#f97316", "#ec4899"];
+    const palette = ["#96b96c", "#e3bc7a", "#c88878", "#6c998c", "#b6bb9e", "#8c9dad", "#aaa0b5", "#d5d9b6"];
 
     if (categoryChart) categoryChart.destroy();
     categoryChart = new Chart(ctx, {
@@ -125,12 +125,14 @@ function renderCategoryChart(byCategory) {
                 data: values.length ? values : [1],
                 backgroundColor: palette,
                 borderWidth: 2,
-                borderColor: "#ffffff",
+                borderColor: getComputedStyle(document.body).getPropertyValue("--surface").trim(),
             }],
         },
         options: {
+            responsive: true,
+            maintainAspectRatio: false,
             plugins: {
-                legend: { position: "bottom", labels: { font: { family: "Consolas" } } },
+                legend: { position: "bottom", labels: { color: getComputedStyle(document.body).getPropertyValue("--text").trim(), usePointStyle: true, pointStyle: "circle", boxWidth: 8, boxHeight: 8, padding: 18, font: { family: "Arial, Noto Sans Thai, sans-serif", size: 12 } } },
             },
         },
     });
@@ -148,21 +150,22 @@ function renderMonthlyChart(byMonth) {
                 {
                     label: "รายรับ",
                     data: byMonth.income.length ? byMonth.income : [0],
-                    backgroundColor: "#22c55e",
+                    backgroundColor: "#96b96c",
                     borderRadius: 6,
                 },
                 {
                     label: "รายจ่าย",
                     data: byMonth.expense.length ? byMonth.expense : [0],
-                    backgroundColor: "#f87171",
+                    backgroundColor: "#c88878",
                     borderRadius: 6,
                 },
             ],
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
-                legend: { position: "bottom", labels: { font: { family: "Consolas" } } },
+                legend: { position: "bottom", labels: { color: getComputedStyle(document.body).getPropertyValue("--text").trim(), usePointStyle: true, pointStyle: "circle", boxWidth: 8, boxHeight: 8, padding: 18, font: { family: "Arial, Noto Sans Thai, sans-serif", size: 12 } } },
             },
             scales: {
                 y: { beginAtZero: true },
@@ -233,6 +236,7 @@ cancelEditBtn.addEventListener("click", () => {
 function startEdit(id, transactions) {
     if (isSaving || isDeleting || pendingDeleteId !== null) return;
     cancelEditBtn.hidden = false;
+    document.getElementById("formTitle").textContent = "แก้ไขรายการ";
     const t = transactions.find((x) => String(x.id) === String(id));
     if (!t) return;
 
@@ -250,6 +254,7 @@ function startEdit(id, transactions) {
 function resetForm() {
     editingId = null;
     cancelEditBtn.hidden = true;
+    document.getElementById("formTitle").textContent = "เพิ่มรายการ";
     form.reset();
     dateInput.valueAsDate = new Date();
     document.getElementById("submitBtn").innerHTML = '<i class="fa-solid fa-check"></i> บันทึกรายการ';
@@ -338,9 +343,10 @@ darkModeBtn.addEventListener("click", () => {
     document.body.classList.toggle("dark");
     const isDark = document.body.classList.contains("dark");
     localStorage.setItem("darkMode", isDark ? "on" : "off");
+    applyChartTheme();
 });
 
-if (localStorage.getItem("darkMode") === "on") {
+if (localStorage.getItem("darkMode") !== "off") {
     document.body.classList.add("dark");
 }
 
@@ -348,7 +354,8 @@ if (localStorage.getItem("darkMode") === "on") {
    เริ่มโหลดข้อมูลตอนเปิดหน้า
 ========================================== */
 
-loadAll();
+applyChartTheme();
+loadAll().catch(() => showToast("โหลดข้อมูลไม่สำเร็จ กรุณารีเฟรชหน้าเพื่อลองใหม่", "error"));
 
 function showToast(message, type = "success") {
     const container = document.getElementById("toastContainer");
@@ -452,4 +459,26 @@ function renderInsights(data) {
     container.innerHTML = items.length
         ? `<div class="insight-grid">${items.join("")}</div>`
         : `<p class="empty-state">ยังมีข้อมูลไม่พอสำหรับวิเคราะห์</p>`;
+}
+function applyChartTheme() {
+    const style = getComputedStyle(document.body);
+    const muted = style.getPropertyValue("--muted").trim();
+    const line = style.getPropertyValue("--line").trim();
+    darkModeBtn.setAttribute("aria-label", document.body.classList.contains("dark") ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด");
+    if (typeof Chart === "undefined") return;
+    Chart.defaults.color = muted;
+    Chart.defaults.borderColor = line;
+    for (const chart of [categoryChart, monthlyChart]) {
+        if (!chart) continue;
+        chart.options.plugins.legend.labels.color = style.getPropertyValue("--text").trim();
+        if (chart === monthlyChart) {
+            for (const axis of ["x", "y"]) {
+                chart.options.scales[axis].ticks.color = muted;
+                chart.options.scales[axis].grid.color = line;
+            }
+        } else {
+            chart.data.datasets[0].borderColor = style.getPropertyValue("--surface").trim();
+        }
+        chart.update();
+    }
 }
