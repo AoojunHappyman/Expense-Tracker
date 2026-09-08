@@ -630,6 +630,24 @@ footer p, footer>a:last-child {
     margin: 0;
 }
 
+.footer-copy {
+    min-width: 0;
+    text-align: center;
+}
+
+footer .developer-credit {
+    margin-top: 6px;
+}
+
+.developer-credit a {
+    color: var(--accent);
+    overflow-wrap: anywhere;
+}
+
+.developer-credit a:hover {
+    text-decoration: underline;
+}
+
 .toast-container {
     position: fixed;
     top: 100px;
@@ -863,9 +881,10 @@ footer p, footer>a:last-child {
         flex-wrap: wrap;
     }
 
-    footer p {
+    .footer-copy {
         order: 3;
         width: 100%;
+        text-align: left;
     }
 
     html {
