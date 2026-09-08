@@ -6,10 +6,11 @@ REST API สำหรับบันทึกรายรับ-รายจ่�
 
 import os
 from datetime import date
+from decimal import Decimal, InvalidOperation
 
 import mysql.connector
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, g, redirect, url_for
 
 load_dotenv()
 
@@ -28,12 +29,64 @@ def get_db_connection():
     return mysql.connector.connect(**DB_CONFIG)
 
 
+from auth import init_auth
+from account_migration import register_commands
+
+init_auth(app, lambda: get_db_connection())
+register_commands(app, lambda: get_db_connection())
+
+
+def validate_transaction(data):
+    """ตรวจและจัดรูปแบบข้อมูลให้ตรงกับ schema ก่อนเขียนฐานข้อมูล"""
+    if not isinstance(data, dict):
+        raise ValueError("กรุณาส่งข้อมูลเป็น JSON object")
+
+    missing = [key for key in ("type", "amount", "category", "date") if key not in data]
+    if missing:
+        raise ValueError(f"ข้อมูลไม่ครบ: {', '.join(missing)}")
+    if data["type"] not in ("income", "expense"):
+        raise ValueError("type ต้องเป็น income หรือ expense เท่านั้น")
+
+    raw_amount = data["amount"]
+    try:
+        if isinstance(raw_amount, bool) or not isinstance(raw_amount, (str, int, float)):
+            raise ValueError
+        amount = Decimal(str(raw_amount))
+        if not amount.is_finite() or not Decimal("0") < amount <= Decimal("99999999.99"):
+            raise ValueError
+        if amount != amount.quantize(Decimal("0.01")):
+            raise ValueError
+    except (InvalidOperation, ValueError):
+        raise ValueError("amount ต้องมากกว่า 0 ไม่เกิน 99999999.99 และมีทศนิยมไม่เกิน 2 ตำแหน่ง") from None
+
+    category = data["category"]
+    if not isinstance(category, str) or not category.strip() or len(category.strip()) > 50:
+        raise ValueError("category ต้องเป็นข้อความที่ไม่ว่างและยาวไม่เกิน 50 ตัวอักษร")
+    note = data.get("note", "")
+    if not isinstance(note, str) or len(note.strip()) > 255:
+        raise ValueError("note ต้องเป็นข้อความยาวไม่เกิน 255 ตัวอักษร")
+
+    raw_date = data["date"]
+    try:
+        if not isinstance(raw_date, str):
+            raise ValueError
+        parsed_date = date.fromisoformat(raw_date)
+        if parsed_date.isoformat() != raw_date or parsed_date.year < 1000:
+            raise ValueError
+    except ValueError:
+        raise ValueError("date ต้องเป็นวันที่ที่มีอยู่จริง รูปแบบ YYYY-MM-DD ปี 1000–9999") from None
+
+    return (data["type"], amount, category.strip(), note.strip(), parsed_date)
+
+
 # ==========================================
 # หน้าเว็บหลัก
 # ==========================================
 
 @app.route("/")
 def index():
+    if not g.user:
+        return redirect(url_for("login"))
     return render_template("index.html")
 
 
@@ -48,8 +101,8 @@ def get_transactions():
     start = request.args.get("start")
     end = request.args.get("end")
 
-    query = "SELECT id, type, amount, category, note, date FROM transactions WHERE 1=1"
-    params = []
+    query = "SELECT id, type, amount, category, note, date FROM transactions WHERE user_id = %s"
+    params = [g.user["id"]]
 
     if category:
         query += " AND category = %s"
@@ -81,40 +134,27 @@ def get_transactions():
 @app.route("/api/transactions", methods=["POST"])
 def add_transaction():
     """เพิ่มรายการใหม่"""
-    data = request.get_json(force=True)
-
-    required = ["type", "amount", "category", "date"]
-    missing = [f for f in required if not data.get(f)]
-    if missing:
-        return jsonify({"error": f"ข้อมูลไม่ครบ: {', '.join(missing)}"}), 400
-
-    if data["type"] not in ("income", "expense"):
-        return jsonify({"error": "type ต้องเป็น income หรือ expense เท่านั้น"}), 400
-
     try:
-        amount = float(data["amount"])
-        if amount <= 0:
-            raise ValueError
-    except (TypeError, ValueError):
-        return jsonify({"error": "amount ต้องเป็นตัวเลขที่มากกว่า 0"}), 400
+        values = validate_transaction(request.get_json(silent=True))
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute(
-        """INSERT INTO transactions (type, amount, category, note, date)
-           VALUES (%s, %s, %s, %s, %s)""",
-        (
-            data["type"],
-            amount,
-            data["category"],
-            data.get("note", ""),
-            data["date"],
-        ),
-    )
-    conn.commit()
-    new_id = cursor.lastrowid
-    cursor.close()
-    conn.close()
+    try:
+        cursor.execute(
+            """INSERT INTO transactions (type, amount, category, note, date, user_id)
+               VALUES (%s, %s, %s, %s, %s, %s)""",
+            (*values, g.user["id"]),
+        )
+        new_id = cursor.lastrowid
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()
 
     return jsonify({"id": new_id, "message": "เพิ่มรายการสำเร็จ"}), 201
 
@@ -125,30 +165,33 @@ def add_transaction():
 
 @app.route("/api/transactions/<int:transaction_id>", methods=["PUT"])
 def update_transaction(transaction_id):
-    data = request.get_json(force=True)
+    try:
+        values = validate_transaction(request.get_json(silent=True))
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute(
-        """UPDATE transactions
-           SET type = %s, amount = %s, category = %s, note = %s, date = %s
-           WHERE id = %s""",
-        (
-            data["type"],
-            float(data["amount"]),
-            data["category"],
-            data.get("note", ""),
-            data["date"],
-            transaction_id,
-        ),
-    )
-    conn.commit()
-    affected = cursor.rowcount
-    cursor.close()
-    conn.close()
+    try:
+        # ล็อกรายการระหว่างตรวจและแก้ไข แยกกรณีไม่พบออกจากค่าเดิมที่ไม่เปลี่ยน
+        cursor.execute("SELECT id FROM transactions WHERE id = %s AND user_id = %s FOR UPDATE", (transaction_id, g.user["id"]))
+        if cursor.fetchone() is None:
+            conn.rollback()
+            return jsonify({"error": "ไม่พบรายการนี้"}), 404
+        cursor.execute(
+            """UPDATE transactions
+               SET type = %s, amount = %s, category = %s, note = %s, date = %s
+               WHERE id = %s AND user_id = %s""",
+            (*values, transaction_id, g.user["id"]),
+        )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()
 
-    if affected == 0:
-        return jsonify({"error": "ไม่พบรายการนี้"}), 404
     return jsonify({"message": "แก้ไขรายการสำเร็จ"})
 
 
@@ -156,7 +199,7 @@ def update_transaction(transaction_id):
 def delete_transaction(transaction_id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM transactions WHERE id = %s", (transaction_id,))
+    cursor.execute("DELETE FROM transactions WHERE id = %s AND user_id = %s", (transaction_id, g.user["id"]))
     conn.commit()
     affected = cursor.rowcount
     cursor.close()
@@ -185,7 +228,8 @@ def get_summary():
     # ยอดรวม
     cursor.execute(
         """SELECT type, COALESCE(SUM(amount), 0) AS total
-           FROM transactions GROUP BY type"""
+           FROM transactions WHERE user_id = %s GROUP BY type""",
+        (g.user["id"],)
     )
     totals_raw = {row["type"]: float(row["total"]) for row in cursor.fetchall()}
     income = totals_raw.get("income", 0)
@@ -195,9 +239,10 @@ def get_summary():
     cursor.execute(
         """SELECT category, SUM(amount) AS total
            FROM transactions
-           WHERE type = 'expense'
+           WHERE type = 'expense' AND user_id = %s
            GROUP BY category
-           ORDER BY total DESC"""
+           ORDER BY total DESC""",
+        (g.user["id"],)
     )
     by_category = [
         {"category": row["category"], "total": float(row["total"])}
@@ -210,8 +255,10 @@ def get_summary():
                   type,
                   SUM(amount) AS total
            FROM transactions
+           WHERE user_id = %s
            GROUP BY month, type
-           ORDER BY month ASC"""
+           ORDER BY month ASC""",
+        (g.user["id"],)
     )
     monthly_raw = cursor.fetchall()
     cursor.close()
@@ -253,10 +300,11 @@ def get_insights():
     cursor.execute(
         """SELECT category, SUM(amount) AS total, COUNT(*) AS count
            FROM transactions
-           WHERE type = 'expense'
+           WHERE type = 'expense' AND user_id = %s
            GROUP BY category
            ORDER BY total DESC
-           LIMIT 3"""
+           LIMIT 3""",
+        (g.user["id"],)
     )
     top_categories = [
         {"category": r["category"], "total": float(r["total"]), "count": r["count"]}
@@ -264,7 +312,7 @@ def get_insights():
     ]
 
     # ดึงรายจ่ายทั้งหมดมาคำนวณวันในสัปดาห์ (ทำใน Python เพื่อได้ชื่อวันภาษาไทย)
-    cursor.execute("SELECT date, amount FROM transactions WHERE type = 'expense'")
+    cursor.execute("SELECT date, amount FROM transactions WHERE type = 'expense' AND user_id = %s", (g.user["id"],))
     expense_rows = cursor.fetchall()
 
     thai_days = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"]
@@ -283,10 +331,11 @@ def get_insights():
     cursor.execute(
         """SELECT DATE_FORMAT(date, '%Y-%m') AS month, SUM(amount) AS total
            FROM transactions
-           WHERE type = 'expense'
+           WHERE type = 'expense' AND user_id = %s
            GROUP BY month
            ORDER BY month DESC
-           LIMIT 2"""
+           LIMIT 2""",
+        (g.user["id"],)
     )
     months = cursor.fetchall()
     cursor.close()
@@ -312,4 +361,4 @@ def get_insights():
         }
     )
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=False, port=5000)

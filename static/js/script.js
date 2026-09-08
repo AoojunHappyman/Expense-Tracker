@@ -40,13 +40,13 @@ async function loadTransactions() {
         `<tr><td colspan="6"><div class="skeleton" style="height:20px;">.</div></td></tr>`
     ).join("");
 
-    const res = await fetch("/api/transactions");
+    const res = await apiFetch("/api/transactions");
     const data = await res.json();
     renderTable(data);
 }
 
 async function loadSummary() {
-    const res = await fetch("/api/summary");
+    const res = await apiFetch("/api/summary");
     const data = await res.json();
     renderTotals(data.totals);
     renderCategoryChart(data.by_category);
@@ -197,7 +197,7 @@ form.addEventListener("submit", async (e) => {
     setFormBusy(true);
     submitBtn.textContent = "กำลังบันทึก...";
     try {
-        const res = await fetch(url, {
+        const res = await apiFetch(url, {
             method,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -308,7 +308,7 @@ confirmDeleteBtn.addEventListener("click", async () => {
     confirmDeleteBtn.disabled = true;
     confirmDeleteBtn.textContent = "กำลังลบ...";
     try {
-        const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
+        const res = await apiFetch(`/api/transactions/${id}`, { method: "DELETE" });
         if (!res.ok) {
             showToast("ลบไม่สำเร็จ", "error");
             return;
@@ -397,7 +397,7 @@ function animateValue(elId, endValue) {
 }
 
 async function loadInsights() {
-    const res = await fetch("/api/insights");
+    const res = await apiFetch("/api/insights");
     const data = await res.json();
     renderInsights(data);
 }
@@ -481,4 +481,19 @@ function applyChartTheme() {
         }
         chart.update();
     }
+}
+
+async function apiFetch(url, options = {}) {
+    const response = await fetch(url, {
+        ...options,
+        headers: {
+            ...options.headers,
+            "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content,
+        },
+    });
+    if (response.status === 401) {
+        window.location.assign("/login");
+        throw new Error("Session expired");
+    }
+    return response;
 }

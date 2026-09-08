@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>เก็บรหัสกู้บัญชี · Expense Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark">
+    <main class="auth-shell">
+        <section class="box auth-box">
+            <p class="eyebrow">ACCOUNT RECOVERY</p>
+            <h1>เก็บรหัสนี้ไว้ให้ดี</h1>
+            <p>รหัสนี้แสดงครั้งเดียว ใช้กู้บัญชีเมื่อลืมรหัสผ่าน กรุณาบันทึกในที่ปลอดภัยก่อนออกจากหน้านี้</p>
+            <code class="recovery-code">{{ code }}</code>
+            <p>อย่าส่งรหัสนี้ให้ผู้อื่น เมื่อใช้กู้บัญชี ระบบจะออกให้ใหม่และยกเลิกรหัสเดิม รวมถึงออกจากระบบบนอุปกรณ์อื่น</p>
+            <a class="button primary" href="{{ url_for('index') }}">เก็บรหัสแล้ว ไปหน้าภาพรวม ↗</a>
+        </section>
+    </main>
+</body>
+</html>

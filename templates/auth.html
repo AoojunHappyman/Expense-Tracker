@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="th">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ {'login': 'เข้าสู่ระบบ', 'register': 'สร้างบัญชี', 'recover': 'กู้บัญชี'}[mode] }} · Expense Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark">
+    <main class="auth-shell">
+        <a class="brand" href="{{ url_for('login') }}">e<span>.</span><span class="brand-name">Expense Tracker</span></a>
+        <section class="box auth-box">
+            <p class="eyebrow">YOUR MONEY / YOUR SPACE</p>
+            <h1>{{ {'login': 'ยินดีต้อนรับกลับ', 'register': 'เริ่มบันทึกในพื้นที่ของคุณ', 'recover': 'กู้คืนบัญชีของคุณ'}[mode] }}</h1>
+            <p class="hero-description">{{ 'ใช้รหัสกู้บัญชีที่บันทึกไว้ และตั้งรหัสผ่านใหม่' if mode == 'recover' else 'รายรับ รายจ่าย และภาพรวมที่เป็นของคุณเท่านั้น' }}</p>
+            {% if error %}<p class="auth-error" role="alert">{{ error }}</p>{% endif %}
+            <form method="post" class="auth-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label for="username">ชื่อผู้ใช้</label>
+                <input id="username" name="username" autocomplete="username" required minlength="3" maxlength="50" pattern="[a-zA-Z0-9_-]+" placeholder="เช่น aoo_jun">
+                {% if mode != 'login' %}<small>ใช้ภาษาอังกฤษ ตัวเลข _ หรือ - จำนวน 3–50 ตัว</small>{% endif %}
+                {% if mode == 'recover' %}
+                <label for="recovery_code">รหัสกู้บัญชี</label>
+                <input id="recovery_code" name="recovery_code" autocomplete="off" required maxlength="100">
+                {% endif %}
+                <label for="password">{{ 'รหัสผ่านใหม่' if mode == 'recover' else 'รหัสผ่าน' }}</label>
+                <input id="password" name="password" type="password" autocomplete="{{ 'current-password' if mode == 'login' else 'new-password' }}" required {% if mode != 'login' %}minlength="12"{% endif %} maxlength="128">
+                {% if mode != 'login' %}<small>ใช้รหัสผ่าน 12–128 ตัวอักษร</small>{% endif %}
+                <button type="submit" class="button primary">{{ {'login': 'เข้าสู่ระบบ', 'register': 'สร้างบัญชี', 'recover': 'ตั้งรหัสผ่านใหม่'}[mode] }}</button>
+            </form>
+            <div class="auth-links">
+                {% if mode != 'login' %}<a href="{{ url_for('login') }}">กลับไปเข้าสู่ระบบ</a>{% endif %}
+                {% if mode == 'login' %}<a href="{{ url_for('register') }}">สร้างบัญชีใหม่ ↗</a><a href="{{ url_for('recover') }}">ลืมรหัสผ่าน?</a>{% endif %}
+            </div>
+        </section>
+    </main>
+</body>
+</html>

@@ -861,3 +861,61 @@ footer p, footer>a:last-child {
     }
 
 }
+/* Account screens */
+.auth-shell {
+    max-width: 560px;
+    padding-block: 56px;
+}
+.auth-box {
+    padding: 32px;
+}
+.auth-box h1 {
+    font-size: 30px;
+    letter-spacing: -0.5px;
+}
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 28px;
+}
+.auth-form small {
+    color: var(--muted);
+}
+.auth-form button {
+    margin-top: 14px;
+}
+.auth-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 24px;
+    font-size: 13px;
+    color: var(--accent);
+}
+.auth-error {
+    color: var(--red);
+    margin-top: 20px;
+}
+.recovery-code {
+    display: block;
+    overflow-wrap: anywhere;
+    padding: 20px;
+    margin-block: 24px;
+    background: var(--bg);
+    color: var(--accent);
+    border: 1px solid var(--line);
+    user-select: all;
+}
+.account-name {
+    color: var(--muted);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+@media (max-width: 900px) {
+    .header-inner {
+        flex-wrap: wrap;
+        padding-block: 16px;
+    }
+}

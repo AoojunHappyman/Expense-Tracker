@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Expense Tracker</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -14,8 +15,13 @@
     <header>
         <nav class="header-inner" aria-label="เมนูหลัก">
             <a class="brand" href="#main">e<span>.</span><span class="brand-name">Expense Tracker</span></a>
+            <span class="account-name">{{ g.user.username }}</span>
             <div class="nav-links"><a href="#overview">ภาพรวม</a><a href="#entry">บันทึกรายการ</a><a href="#transactions">ประวัติรายการ</a></div>
             <button id="darkMode" type="button" aria-label="สลับโหมดมืด/สว่าง" title="สลับโหมดมืด/สว่าง"><i class="fa-solid fa-moon"></i><i class="fa-solid fa-sun"></i></button>
+            <form method="post" action="{{ url_for('logout') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn-secondary">ออกจากระบบ</button>
+            </form>
         </nav>
     </header>
     <main id="main">
