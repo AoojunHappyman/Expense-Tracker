@@ -232,7 +232,13 @@ def delete_transaction(transaction_id):
 
 @app.get("/api/dashboard")
 def get_dashboard():
-    from dashboard import build_dashboard
+    from dashboard import build_dashboard, validate_filters
+    filters = dict(month=request.args.get('month', ''),
+                   category=request.args.get('category', ''), kind=request.args.get('type', ''))
+    try:
+        validate_filters(**filters)
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     try:
@@ -245,154 +251,24 @@ def get_dashboard():
     finally:
         cursor.close()
         conn.close()
-    return jsonify(build_dashboard(rows))
+    return jsonify(build_dashboard(rows, **filters))
 
 
 @app.route("/api/summary")
 def get_summary():
-    """
-    ส่งข้อมูลสรุป 3 ก้อน:
-    - totals: ยอดรวมรายรับ/รายจ่าย/คงเหลือ
-    - by_category: ยอดรายจ่ายแยกตามหมวดหมู่ (สำหรับ pie chart)
-    - by_month: ยอดรายรับ-รายจ่ายแยกตามเดือน (สำหรับ bar/line chart)
-    """
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    response = get_dashboard()
+    if isinstance(response, tuple):
+        return response
+    return jsonify(response.get_json()['summary'])
 
-    # ยอดรวม
-    cursor.execute(
-        """SELECT type, COALESCE(SUM(amount), 0) AS total
-           FROM transactions WHERE user_id = %s GROUP BY type""",
-        (g.user["id"],)
-    )
-    totals_raw = {row["type"]: float(row["total"]) for row in cursor.fetchall()}
-    income = totals_raw.get("income", 0)
-    expense = totals_raw.get("expense", 0)
-
-    # แยกตามหมวดหมู่ (เฉพาะรายจ่าย)
-    cursor.execute(
-        """SELECT category, SUM(amount) AS total
-           FROM transactions
-           WHERE type = 'expense' AND user_id = %s
-           GROUP BY category
-           ORDER BY total DESC""",
-        (g.user["id"],)
-    )
-    by_category = [
-        {"category": row["category"], "total": float(row["total"])}
-        for row in cursor.fetchall()
-    ]
-
-    # แยกตามเดือน
-    cursor.execute(
-        """SELECT DATE_FORMAT(date, '%Y-%m') AS month,
-                  type,
-                  SUM(amount) AS total
-           FROM transactions
-           WHERE user_id = %s
-           GROUP BY month, type
-           ORDER BY month ASC""",
-        (g.user["id"],)
-    )
-    monthly_raw = cursor.fetchall()
-    cursor.close()
-    conn.close()
-
-    months = sorted({row["month"] for row in monthly_raw})
-    by_month = {"labels": months, "income": [], "expense": []}
-    for m in months:
-        inc = next((r["total"] for r in monthly_raw if r["month"] == m and r["type"] == "income"), 0)
-        exp = next((r["total"] for r in monthly_raw if r["month"] == m and r["type"] == "expense"), 0)
-        by_month["income"].append(float(inc))
-        by_month["expense"].append(float(exp))
-
-    return jsonify(
-        {
-            "totals": {
-                "income": income,
-                "expense": expense,
-                "balance": income - expense,
-            },
-            "by_category": by_category,
-            "by_month": by_month,
-        }
-    )
 
 @app.route("/api/insights")
 def get_insights():
-    """
-    วิเคราะห์ข้อมูลรายจ่าย:
-    - top_categories: หมวดหมู่ใช้จ่ายสูงสุด 3 อันดับ
-    - busiest_day: วันในสัปดาห์ที่ใช้จ่ายรวมเยอะที่สุด
-    - day_breakdown: ยอดรวมแยกตามวันในสัปดาห์ (ทั้ง 7 วัน)
-    - month_comparison: เทียบยอดรายจ่ายเดือนนี้กับเดือนก่อน
-    """
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    response = get_dashboard()
+    if isinstance(response, tuple):
+        return response
+    return jsonify(response.get_json()['insights'])
 
-    # หมวดหมู่ใช้จ่ายสูงสุด 3 อันดับ
-    cursor.execute(
-        """SELECT category, SUM(amount) AS total, COUNT(*) AS count
-           FROM transactions
-           WHERE type = 'expense' AND user_id = %s
-           GROUP BY category
-           ORDER BY total DESC
-           LIMIT 3""",
-        (g.user["id"],)
-    )
-    top_categories = [
-        {"category": r["category"], "total": float(r["total"]), "count": r["count"]}
-        for r in cursor.fetchall()
-    ]
 
-    # ดึงรายจ่ายทั้งหมดมาคำนวณวันในสัปดาห์ (ทำใน Python เพื่อได้ชื่อวันภาษาไทย)
-    cursor.execute("SELECT date, amount FROM transactions WHERE type = 'expense' AND user_id = %s", (g.user["id"],))
-    expense_rows = cursor.fetchall()
-
-    thai_days = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"]
-    day_totals = [0.0] * 7
-    for r in expense_rows:
-        day_totals[r["date"].weekday()] += float(r["amount"])
-
-    day_breakdown = [{"day": thai_days[i], "total": day_totals[i]} for i in range(7)]
-
-    busiest_day = None
-    if any(day_totals):
-        idx = max(range(7), key=lambda i: day_totals[i])
-        busiest_day = {"day": thai_days[idx], "total": day_totals[idx]}
-
-    # เทียบเดือนนี้กับเดือนก่อน
-    cursor.execute(
-        """SELECT DATE_FORMAT(date, '%Y-%m') AS month, SUM(amount) AS total
-           FROM transactions
-           WHERE type = 'expense' AND user_id = %s
-           GROUP BY month
-           ORDER BY month DESC
-           LIMIT 2""",
-        (g.user["id"],)
-    )
-    months = cursor.fetchall()
-    cursor.close()
-    conn.close()
-
-    month_comparison = None
-    if len(months) == 2:
-        current, previous = float(months[0]["total"]), float(months[1]["total"])
-        pct_change = ((current - previous) / previous * 100) if previous else 0
-        month_comparison = {
-            "current_month": months[0]["month"],
-            "current_total": current,
-            "previous_total": previous,
-            "pct_change": round(pct_change, 1),
-        }
-
-    return jsonify(
-        {
-            "top_categories": top_categories,
-            "busiest_day": busiest_day,
-            "day_breakdown": day_breakdown,
-            "month_comparison": month_comparison,
-        }
-    )
 if __name__ == "__main__":
     app.run(debug=False, port=5000)

@@ -31,18 +31,54 @@ const fmtMoney = (n) =>
    โหลดข้อมูลทั้งหมด (รายการ + สรุป)
 ========================================== */
 
+const filtersForm = document.getElementById("dashboardFilters");
+const filterMonth = document.getElementById("filterMonth");
+const filterCategory = document.getElementById("filterCategory");
+const filterType = document.getElementById("filterType");
+const filterStatus = document.getElementById("filterStatus");
+let loadVersion = 0;
+
+filtersForm.addEventListener("submit", (event) => event.preventDefault());
+filtersForm.addEventListener("change", () => loadAll().catch(() => {}));
+filtersForm.addEventListener("reset", () => {
+    setTimeout(() => loadAll().catch(() => {}), 0);
+});
+
 async function loadAll() {
-    tableBody.innerHTML = Array(3).fill(
-        `<tr><td colspan="6"><div class="skeleton" style="height:20px;">.</div></td></tr>`
-    ).join("");
-    const res = await apiFetch("/api/dashboard");
-    if (!res.ok) throw new Error("Unable to load dashboard");
-    const data = await res.json();
-    renderTable(data.transactions);
-    renderTotals(data.summary.totals);
-    renderCategoryChart(data.summary.by_category);
-    renderMonthlyChart(data.summary.by_month);
-    renderInsights(data.insights);
+    const version = ++loadVersion;
+    const params = new URLSearchParams({
+        month: filterMonth.value,
+        category: filterCategory.value,
+        type: filterType.value,
+    });
+    filterStatus.textContent = "กำลังโหลดข้อมูลตามตัวกรอง…";
+    emptyState.style.display = "none";
+    try {
+        tableBody.innerHTML = Array(3).fill(
+            `<tr><td colspan="6"><div class="skeleton" style="height:20px;">.</div></td></tr>`
+        ).join("");
+        const res = await apiFetch(`/api/dashboard?${params}`);
+        if (!res.ok) throw new Error("Unable to load dashboard");
+        const data = await res.json();
+        if (version !== loadVersion) return;
+        const selectedCategory = params.get("category");
+        const categories = [...new Set([...data.category_options, ...(selectedCategory ? [selectedCategory] : [])])];
+        filterCategory.replaceChildren(new Option("ทุกหมวดหมู่", ""),
+            ...categories.map((category) => new Option(category, category)));
+        filterCategory.value = selectedCategory;
+        filterStatus.textContent = `${params.get("month") || "ทุกเดือน"} · ${selectedCategory || "ทุกหมวดหมู่"} · ${filterType.selectedOptions[0].text} · ${data.transactions.length} รายการ`;
+        renderTable(data.transactions);
+        renderTotals(data.summary.totals);
+        renderCategoryChart(data.summary.by_category);
+        renderMonthlyChart(data.summary.by_month);
+        renderInsights(data.insights);
+    } catch (error) {
+        if (version !== loadVersion) return;
+        filterStatus.textContent = "โหลดไม่สำเร็จ กรุณาเปลี่ยนตัวกรองหรือรีเฟรชเพื่อลองใหม่";
+        tableBody.innerHTML = "";
+        showToast("โหลดข้อมูลตามตัวกรองไม่สำเร็จ", "error");
+        throw error;
+    }
 }
 
 /* ==========================================
@@ -115,7 +151,7 @@ function renderCategoryChart(byCategory) {
             labels: labels.length ? labels : ["ยังไม่มีข้อมูล"],
             datasets: [{
                 data: values.length ? values : [1],
-                backgroundColor: palette,
+                backgroundColor: values.length ? palette : ["#777777"],
                 borderWidth: 2,
                 borderColor: getComputedStyle(document.body).getPropertyValue("--surface").trim(),
             }],
@@ -124,6 +160,7 @@ function renderCategoryChart(byCategory) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
+                tooltip: { enabled: values.length > 0 },
                 legend: { position: "bottom", labels: { color: getComputedStyle(document.body).getPropertyValue("--text").trim(), usePointStyle: true, pointStyle: "circle", boxWidth: 8, boxHeight: 8, padding: 18, font: { family: "Arial, Noto Sans Thai, sans-serif", size: 12 } } },
             },
         },
@@ -373,6 +410,7 @@ function renderTotals(totals) {
 
 function animateValue(elId, endValue) {
     const el = document.getElementById(elId);
+    cancelAnimationFrame(el.animationFrame);
     const startValue = parseFloat(el.dataset.raw || 0);
     const duration = 600;
     const startTime = performance.now();
@@ -382,16 +420,10 @@ function animateValue(elId, endValue) {
         const eased = 1 - Math.pow(1 - progress, 3); // ease-out
         const current = startValue + (endValue - startValue) * eased;
         el.textContent = fmtMoney(current);
-        if (progress < 1) requestAnimationFrame(step);
+        if (progress < 1) el.animationFrame = requestAnimationFrame(step);
     }
     el.dataset.raw = endValue;
-    requestAnimationFrame(step);
-}
-
-async function loadInsights() {
-    const res = await apiFetch("/api/insights");
-    const data = await res.json();
-    renderInsights(data);
+    el.animationFrame = requestAnimationFrame(step);
 }
 
 function renderInsights(data) {
@@ -430,18 +462,23 @@ function renderInsights(data) {
     // เทียบเดือนนี้กับเดือนก่อน
     if (data.month_comparison) {
         const mc = data.month_comparison;
-        const isUp = mc.pct_change > 0;
-        const trendClass = isUp ? "trend-up" : "trend-down";
-        const trendIcon = isUp ? "fa-arrow-trend-up" : "fa-arrow-trend-down";
+        const formatMonth = (value) => {
+            const [year, month] = value.split("-").map(Number);
+            return new Date(year, month - 1, 1).toLocaleDateString("th-TH", { month: "long", year: "numeric" });
+        };
+        const change = mc.pct_change === null
+            ? "เดือนก่อนไม่มีรายจ่าย จึงคำนวณเปอร์เซ็นต์ไม่ได้"
+            : mc.pct_change === 0 ? "ยอดเท่าเดิม"
+            : `${mc.pct_change > 0 ? "เพิ่มขึ้น" : "ลดลง"} ${Math.abs(mc.pct_change)}%`;
         items.push(`
             <div class="insight-item">
                 <i class="fa-solid fa-chart-line"></i>
                 <div>
                     <p class="insight-title">เทียบกับเดือนก่อน</p>
                     <p class="insight-detail">
-                        ใช้จ่ายเดือนนี้ <b>${fmtMoney(mc.current_total)}</b>
-                        <span class="${trendClass}"><i class="fa-solid ${trendIcon}"></i> ${Math.abs(mc.pct_change)}%</span>
-                        เทียบกับเดือนก่อน
+                        ${formatMonth(mc.current_month)} <b>${fmtMoney(mc.current_total)}</b><br>
+                        เทียบกับ ${formatMonth(mc.previous_month)} <b>${fmtMoney(mc.previous_total)}</b><br>
+                        ${change}<br><small>เทียบยอดเต็มเดือนตามหมวดหมู่ที่เลือก เดือนปัจจุบันอาจยังไม่ครบเดือน</small>
                     </p>
                 </div>
             </div>

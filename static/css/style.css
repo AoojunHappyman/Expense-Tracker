@@ -962,3 +962,26 @@ footer .developer-credit {
         padding-block: 16px;
     }
 }
+
+/* Shared dashboard filters */
+.dashboard-filters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    align-items: end;
+    gap: 16px;
+    margin: 20px 0;
+}
+.dashboard-filters .form-row {
+    min-width: 0;
+    margin: 0;
+}
+.dashboard-filters input,
+.dashboard-filters select {
+    width: 100%;
+    min-width: 0;
+}
+@media (max-width: 600px) {
+    .dashboard-filters {
+        grid-template-columns: 1fr;
+    }
+}

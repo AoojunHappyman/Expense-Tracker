@@ -29,7 +29,26 @@
             <div><p class="eyebrow">PERSONAL FINANCE / EXPENSE TRACKER</p><h1>ทุกการใช้จ่าย<br><em>มองเห็นได้ชัดขึ้น.</em></h1><p class="hero-description">บันทึกรายรับ รายจ่าย และเข้าใจการใช้เงินของคุณในที่เดียว</p></div>
             <a class="button primary" href="#entry">บันทึกรายการใหม่ <span aria-hidden="true">↗</span></a>
         </section>
-        <div class="section-label"><span>01 / OVERVIEW</span><span>สรุปจากรายการทั้งหมด</span></div>
+        <div class="section-label"><span>01 / OVERVIEW</span><span id="filterStatus" role="status">สรุปจากรายการทั้งหมด</span></div>
+        <form id="dashboardFilters" class="dashboard-filters" aria-label="ตัวกรองข้อมูล">
+            <div class="form-row">
+                <label for="filterMonth">เดือน (เว้นว่างเพื่อดูทั้งหมด)</label>
+                <input id="filterMonth" type="month" min="1000-01" max="9999-12">
+            </div>
+            <div class="form-row">
+                <label for="filterCategory">หมวดหมู่</label>
+                <select id="filterCategory"><option value="">ทุกหมวดหมู่</option></select>
+            </div>
+            <div class="form-row">
+                <label for="filterType">รายรับ–รายจ่าย</label>
+                <select id="filterType">
+                    <option value="">ทุกประเภท</option>
+                    <option value="income">รายรับ</option>
+                    <option value="expense">รายจ่าย</option>
+                </select>
+            </div>
+            <button type="reset" class="btn-secondary">ล้างตัวกรอง</button>
+        </form>
         <!-- ========== การ์ดสรุปยอด ========== -->
         <section class="summary-cards">
             <div class="card income">
@@ -135,7 +154,7 @@
                         <!-- เติมด้วย JavaScript -->
                     </tbody>
                 </table>
-                <p id="emptyState" class="empty-state" style="display:none;">ยังไม่มีรายการ ลองเพิ่มรายการแรกของคุณ</p>
+                <p id="emptyState" class="empty-state" style="display:none;">ไม่พบรายการตามตัวกรองนี้ ลองล้างตัวกรองหรือเพิ่มรายการใหม่</p>
             </div>
         </section>
 
