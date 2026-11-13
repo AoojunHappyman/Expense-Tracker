@@ -1056,3 +1056,36 @@ button:enabled:active, .button:active { transform: translate(2px, 2px); box-shad
     .table-wrap td:nth-child(5) { grid-column: 2; grid-row: 2; }
     .table-wrap td:last-child { grid-column: 1 / -1; text-align: right; }
 }
+
+.auth-panel {
+    margin-top: 24px;
+    overflow: hidden;
+    padding: 0;
+    border-width: 3px;
+    box-shadow: 7px 7px 0 var(--stamp);
+}
+.auth-panel .auth-heading {
+    position: static;
+    padding: clamp(20px, 5vw, 36px);
+    border-bottom: 3px solid #303428;
+    background: var(--lime);
+    color: #20241c;
+}
+.auth-heading h1 {
+    margin: 0;
+    color: inherit;
+    font-size: clamp(2rem, 6vw, 3.3rem);
+    line-height: 1.2;
+}
+.auth-heading .hero-description {
+    margin: 10px 0 0;
+    color: inherit;
+}
+.auth-panel :is(.auth-form, .auth-links, .auth-error) {
+    margin-inline: clamp(18px, 5vw, 36px);
+}
+.auth-panel .auth-links {
+    border-top: 2px solid var(--line);
+    padding-block: 16px;
+    font-weight: 700;
+}
