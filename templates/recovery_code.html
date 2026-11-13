@@ -6,10 +6,10 @@
     <title>เก็บรหัสกู้บัญชี · Expense Tracker</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body class="dark">
+<body><script>document.body.classList.toggle("dark", localStorage.getItem("darkMode") === "on");</script>
     <main class="auth-shell">
         <section class="box auth-box">
-            <p class="eyebrow">ACCOUNT RECOVERY</p>
+
             <h1>เก็บรหัสนี้ไว้ให้ดี</h1>
             <p>รหัสนี้แสดงครั้งเดียว ใช้กู้บัญชีเมื่อลืมรหัสผ่าน กรุณาบันทึกในที่ปลอดภัยก่อนออกจากหน้านี้</p>
             <code class="recovery-code">{{ code }}</code>

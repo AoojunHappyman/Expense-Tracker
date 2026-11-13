@@ -6,11 +6,11 @@
     <title>{{ {'login': 'เข้าสู่ระบบ', 'register': 'สร้างบัญชี', 'recover': 'กู้บัญชี'}[mode] }} · Expense Tracker</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body class="dark">
+<body><script>document.body.classList.toggle("dark", localStorage.getItem("darkMode") === "on");</script>
     <main class="auth-shell">
         <a class="brand" href="{{ url_for('login') }}">e<span>.</span><span class="brand-name">Expense Tracker</span></a>
         <section class="box auth-box">
-            <p class="eyebrow">YOUR MONEY / YOUR SPACE</p>
+
             <h1>{{ {'login': 'ยินดีต้อนรับกลับ', 'register': 'เริ่มบันทึกในพื้นที่ของคุณ', 'recover': 'กู้คืนบัญชีของคุณ'}[mode] }}</h1>
             <p class="hero-description">{{ 'ใช้รหัสกู้บัญชีที่บันทึกไว้ และตั้งรหัสผ่านใหม่' if mode == 'recover' else 'รายรับ รายจ่าย และภาพรวมที่เป็นของคุณเท่านั้น' }}</p>
             {% if error %}<p class="auth-error" role="alert">{{ error }}</p>{% endif %}

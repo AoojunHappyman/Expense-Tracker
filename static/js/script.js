@@ -111,8 +111,8 @@ function renderTable(transactions) {
             <td>${escapeHtml(t.note || "-")}</td>
             <td class="amount-cell">${t.type === "income" ? "+" : "-"}${fmtMoney(t.amount)}</td>
             <td>
-                <button class="icon-btn edit" data-id="${t.id}" title="แก้ไข"><i class="fa-solid fa-pen"></i></button>
-                <button class="icon-btn delete" data-id="${t.id}" title="ลบ"><i class="fa-solid fa-trash"></i></button>
+                <button class="icon-btn edit" data-id="${t.id}" aria-label="แก้ไขรายการ" title="แก้ไข"><i class="fa-solid fa-pen"></i></button>
+                <button class="icon-btn delete" data-id="${t.id}" aria-label="ลบรายการ" title="ลบ"><i class="fa-solid fa-trash"></i></button>
             </td>
         `;
         tableBody.appendChild(tr);
@@ -142,9 +142,14 @@ function renderCategoryChart(byCategory) {
     const labels = byCategory.map((c) => c.category);
     const values = byCategory.map((c) => c.total);
 
-    const palette = ["#96b96c", "#e3bc7a", "#c88878", "#6c998c", "#b6bb9e", "#8c9dad", "#aaa0b5", "#d5d9b6"];
+    const palette = ["#68a9ce", "#e3bc7a", "#ee9979", "#6c998c", "#b6bb9e", "#8c9dad", "#aaa0b5", "#d5d9b6"];
 
     if (categoryChart) categoryChart.destroy();
+    categoryChart = null;
+    ctx.hidden = !byCategory.length;
+    ctx.nextElementSibling.hidden = Boolean(byCategory.length);
+    ctx.nextElementSibling.textContent = "ไม่มีรายจ่ายในรายการที่เลือก";
+    if (!byCategory.length) return;
     categoryChart = new Chart(ctx, {
         type: "pie",
         data: {
@@ -171,6 +176,11 @@ function renderMonthlyChart(byMonth) {
     const ctx = document.getElementById("monthlyChart");
 
     if (monthlyChart) monthlyChart.destroy();
+    monthlyChart = null;
+    ctx.hidden = !byMonth.labels.length;
+    ctx.nextElementSibling.hidden = Boolean(byMonth.labels.length);
+    ctx.nextElementSibling.textContent = "ไม่มีรายการในช่วงที่เลือก";
+    if (!byMonth.labels.length) return;
     monthlyChart = new Chart(ctx, {
         type: "bar",
         data: {
@@ -179,13 +189,13 @@ function renderMonthlyChart(byMonth) {
                 {
                     label: "รายรับ",
                     data: byMonth.income.length ? byMonth.income : [0],
-                    backgroundColor: "#96b96c",
+                    backgroundColor: "#68a9ce",
                     borderRadius: 6,
                 },
                 {
                     label: "รายจ่าย",
                     data: byMonth.expense.length ? byMonth.expense : [0],
-                    backgroundColor: "#c88878",
+                    backgroundColor: "#ee9979",
                     borderRadius: 6,
                 },
             ],
@@ -236,6 +246,7 @@ form.addEventListener("submit", async (e) => {
             showToast(err.error || "บันทึกไม่สำเร็จ", "error");
             return;
         }
+        showToast("บันทึกรายการแล้ว");
         resetForm();
         try {
             await loadAll();
@@ -342,6 +353,7 @@ confirmDeleteBtn.addEventListener("click", async () => {
             showToast("ลบไม่สำเร็จ", "error");
             return;
         }
+        showToast("ลบรายการแล้ว");
         deleted = true;
         if (String(editingId) === String(id)) resetForm();
         try {
@@ -375,7 +387,7 @@ darkModeBtn.addEventListener("click", () => {
     applyChartTheme();
 });
 
-if (localStorage.getItem("darkMode") !== "off") {
+if (localStorage.getItem("darkMode") === "on") {
     document.body.classList.add("dark");
 }
 
@@ -412,6 +424,11 @@ function animateValue(elId, endValue) {
     const el = document.getElementById(elId);
     cancelAnimationFrame(el.animationFrame);
     const startValue = parseFloat(el.dataset.raw || 0);
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        el.textContent = fmtMoney(endValue);
+        el.dataset.raw = endValue;
+        return;
+    }
     const duration = 600;
     const startTime = performance.now();
 
@@ -495,6 +512,7 @@ function applyChartTheme() {
     const line = style.getPropertyValue("--line").trim();
     darkModeBtn.setAttribute("aria-label", document.body.classList.contains("dark") ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด");
     if (typeof Chart === "undefined") return;
+    Chart.defaults.animation = matchMedia("(prefers-reduced-motion: reduce)").matches ? false : Chart.defaults.animation;
     Chart.defaults.color = muted;
     Chart.defaults.borderColor = line;
     for (const chart of [categoryChart, monthlyChart]) {

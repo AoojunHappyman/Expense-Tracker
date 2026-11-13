@@ -26,10 +26,33 @@
     </header>
     <main id="main">
         <section class="hero" id="overview">
-            <div><p class="eyebrow">PERSONAL FINANCE / EXPENSE TRACKER</p><h1>ทุกการใช้จ่าย<br><em>มองเห็นได้ชัดขึ้น.</em></h1><p class="hero-description">บันทึกรายรับ รายจ่าย และเข้าใจการใช้เงินของคุณในที่เดียว</p></div>
+            <h1>ภาพรวมการเงิน</h1>
             <a class="button primary" href="#entry">บันทึกรายการใหม่ <span aria-hidden="true">↗</span></a>
         </section>
-        <div class="section-label"><span>01 / OVERVIEW</span><span id="filterStatus" role="status">สรุปจากรายการทั้งหมด</span></div>
+        <section class="summary-cards">
+            <div class="card balance">
+                <i class="fa-solid fa-scale-balanced"></i>
+                <div>
+                    <p class="label">คงเหลือ</p>
+                    <p class="value" id="totalBalance">฿0.00</p>
+                </div>
+            </div>
+            <div class="card income">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+                <div>
+                    <p class="label">รายรับรวม</p>
+                    <p class="value" id="totalIncome">฿0.00</p>
+                </div>
+            </div>
+            <div class="card expense">
+                <i class="fa-solid fa-arrow-trend-down"></i>
+                <div>
+                    <p class="label">รายจ่ายรวม</p>
+                    <p class="value" id="totalExpense">฿0.00</p>
+                </div>
+            </div>
+        </section>
+        <div class="section-label"><span>ตัวกรองรายการ</span><span id="filterStatus" role="status">สรุปจากรายการทั้งหมด</span></div>
         <form id="dashboardFilters" class="dashboard-filters" aria-label="ตัวกรองข้อมูล">
             <div class="form-row">
                 <label for="filterMonth">เดือน (เว้นว่างเพื่อดูทั้งหมด)</label>
@@ -50,29 +73,7 @@
             <button type="reset" class="btn-secondary">ล้างตัวกรอง</button>
         </form>
         <!-- ========== การ์ดสรุปยอด ========== -->
-        <section class="summary-cards">
-            <div class="card income">
-                <i class="fa-solid fa-arrow-trend-up"></i>
-                <div>
-                    <p class="label">รายรับรวม</p>
-                    <p class="value" id="totalIncome">฿0.00</p>
-                </div>
-            </div>
-            <div class="card expense">
-                <i class="fa-solid fa-arrow-trend-down"></i>
-                <div>
-                    <p class="label">รายจ่ายรวม</p>
-                    <p class="value" id="totalExpense">฿0.00</p>
-                </div>
-            </div>
-            <div class="card balance">
-                <i class="fa-solid fa-scale-balanced"></i>
-                <div>
-                    <p class="label">คงเหลือ</p>
-                    <p class="value" id="totalBalance">฿0.00</p>
-                </div>
-            </div>
-        </section>
+
 
         <!-- ========== ฟอร์มเพิ่มรายการ ========== -->
         <section class="box form-box" id="entry">
@@ -127,11 +128,11 @@
         <section class="charts-grid">
             <div class="box chart-box">
                 <h2 class="Eb"><i class="fa-solid fa-chart-pie"></i> รายจ่ายแยกตามหมวดหมู่</h2>
-                <div class="boxtext1"><canvas id="categoryChart" role="img" aria-label="กราฟรายจ่ายแยกตามหมวดหมู่"></canvas></div>
+                <div class="boxtext1"><canvas id="categoryChart" role="img" aria-label="กราฟรายจ่ายแยกตามหมวดหมู่"></canvas><p class="chart-empty" hidden></p></div>
             </div>
             <div class="box chart-box">
                 <h2 class="Eb"><i class="fa-solid fa-chart-column"></i> รายรับ-รายจ่ายรายเดือน</h2>
-                <div class="boxtext1"><canvas id="monthlyChart" role="img" aria-label="กราฟรายรับและรายจ่ายรายเดือน"></canvas></div>
+                <div class="boxtext1"><canvas id="monthlyChart" role="img" aria-label="กราฟรายรับและรายจ่ายรายเดือน"></canvas><p class="chart-empty" hidden></p></div>
             </div>
         </section>
 
